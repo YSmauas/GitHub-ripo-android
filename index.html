@@ -130,6 +130,11 @@
 
   .hint{font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5;}
   .hint b{color:var(--text);}
+  .clearlink{
+    background:none; border:none; color:var(--blue); font-size:12.5px; font-family:var(--sans);
+    cursor:pointer; padding:6px 0 0; margin:0;
+  }
+  .clearlink:hover{text-decoration:underline;}
 
   @media (prefers-color-scheme: light){
     /* Tool stays dark-themed intentionally — matches the GitHub dark UI it talks to. */
@@ -191,17 +196,19 @@
   </section>
 
   <section>
-    <h2>קובץ ZIP</h2>
+    <h2>קבצים</h2>
     <div class="drop" id="drop">
-      <input type="file" id="zipInput" accept=".zip">
-      <span id="dropText">הקישו כדי לבחור קובץ ZIP, או גררו לכאן</span>
+      <input type="file" id="zipInput" multiple>
+      <span id="dropText">הקישו כדי לבחור ZIP ו/או קבצים בודדים, או גררו לכאן</span>
     </div>
-    <label class="toggle"><input type="checkbox" id="stripRoot"> להסיר תיקיית-שורש משותפת (זוהתה אוטומטית כשרלוונטי)</label>
+    <div class="hint">אפשר לבחור קובץ ZIP אחד (יתפרק אוטומטית), קבצים בודדים, או שילוב של שניהם — כל בחירה מצטרפת לרשימה למטה.</div>
+    <label class="toggle"><input type="checkbox" id="stripRoot"> להסיר תיקיית-שורש משותפת מתוך ZIP (זוהתה אוטומטית כשרלוונטי)</label>
     <div class="filelist" id="fileList" style="display:none;"></div>
     <div class="hint" id="fileHint"></div>
+    <button type="button" class="clearlink" id="clearAll" style="display:none;">נקו את כל הרשימה</button>
   </section>
 
-  <button class="primary" id="pushBtn" disabled>בחרו ZIP כדי להמשיך</button>
+  <button class="primary" id="pushBtn" disabled>בחרו קבצים כדי להמשיך</button>
   <div class="progress-wrap" id="progressWrap">
     <div class="progress-label"><span id="progressText">מעלה קבצים...</span><span id="progressPct">0%</span></div>
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
@@ -262,10 +269,19 @@
   dropEl.addEventListener('dragleave', () => { dropEl.style.borderColor = ''; });
   dropEl.addEventListener('drop', e => {
     e.preventDefault(); dropEl.style.borderColor = '';
-    if (e.dataTransfer.files.length) handleZip(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
   zipInput.addEventListener('change', () => {
-    if (zipInput.files.length) handleZip(zipInput.files[0]);
+    if (zipInput.files.length) handleFiles(zipInput.files);
+    zipInput.value = ''; // allow re-picking the same file(s) again later
+  });
+  $('clearAll').addEventListener('click', () => {
+    entries = [];
+    commonRoot = '';
+    renderFileList();
+    dropText.textContent = 'הקישו כדי לבחור ZIP ו/או קבצים בודדים, או גררו לכאן';
+    pushBtn.disabled = true;
+    pushBtn.textContent = 'בחרו קבצים כדי להמשיך';
   });
 
   function log(msg, cls){
@@ -287,43 +303,57 @@
     return btoa(binary);
   }
 
-  async function handleZip(file){
-    dropText.textContent = 'קורא ' + file.name + ' ...';
-    entries = [];
-    try{
-      const zip = await JSZip.loadAsync(file);
-      const paths = [];
-      const tasks = [];
-      zip.forEach((relPath, zEntry) => {
-        if (zEntry.dir) return;
-        if (relPath.startsWith('__MACOSX/') || relPath.endsWith('.DS_Store')) return;
-        paths.push(relPath);
-        tasks.push(
-          zEntry.async('arraybuffer').then(buf => ({
-            path: relPath,
-            base64: arrayBufferToBase64(buf)
-          }))
-        );
-      });
-      entries = await Promise.all(tasks);
+  function addOrReplaceEntry(path, base64){
+    const existing = entries.find(e => e.path === path);
+    if (existing){
+      existing.base64 = base64;
+      existing.checked = true;
+    } else {
+      entries.push({ path, base64, checked: true });
+    }
+  }
 
-      // detect a shared top-level folder
-      if (paths.length){
-        const first = paths[0].split('/');
-        if (first.length > 1){
-          const candidate = first[0] + '/';
-          if (paths.every(p => p.startsWith(candidate))) commonRoot = candidate;
+  async function handleFiles(fileList){
+    const files = Array.from(fileList);
+    dropText.textContent = 'קורא קבצים ...';
+    try{
+      for (const file of files){
+        const isZip = file.name.toLowerCase().endsWith('.zip') ||
+                      file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
+        if (isZip){
+          const zip = await JSZip.loadAsync(file);
+          const paths = [];
+          const tasks = [];
+          zip.forEach((relPath, zEntry) => {
+            if (zEntry.dir) return;
+            if (relPath.startsWith('__MACOSX/') || relPath.endsWith('.DS_Store')) return;
+            paths.push(relPath);
+            tasks.push(zEntry.async('arraybuffer').then(buf => addOrReplaceEntry(relPath, arrayBufferToBase64(buf))));
+          });
+          await Promise.all(tasks);
+
+          // detect a shared top-level folder (from this zip's own paths)
+          if (paths.length){
+            const first = paths[0].split('/');
+            if (first.length > 1){
+              const candidate = first[0] + '/';
+              if (paths.every(p => p.startsWith(candidate))) commonRoot = candidate;
+            }
+          }
+        } else {
+          const relPath = file.webkitRelativePath && file.webkitRelativePath.length ? file.webkitRelativePath : file.name;
+          const buf = await file.arrayBuffer();
+          addOrReplaceEntry(relPath, arrayBufferToBase64(buf));
         }
       }
       stripRootCk.checked = !!commonRoot;
-
       renderFileList();
-      dropText.textContent = file.name + ' — ' + entries.length + ' קבצים';
-      pushBtn.disabled = false;
+      dropText.textContent = entries.length + ' קבצים ברשימה — הקישו כדי להוסיף עוד';
+      pushBtn.disabled = entries.length === 0;
       pushBtn.textContent = 'דחיפה ל-GitHub';
     }catch(err){
-      dropText.textContent = 'שגיאה בקריאת ה-ZIP';
-      log('שגיאה בפתיחת הקובץ: ' + err.message, 'err');
+      dropText.textContent = 'שגיאה בקריאת הקבצים';
+      log('שגיאה בקריאת קבצים: ' + err.message, 'err');
     }
   }
 
@@ -336,25 +366,28 @@
 
   function renderFileList(){
     fileListEl.style.display = entries.length ? '' : 'none';
+    $('clearAll').style.display = entries.length ? '' : 'none';
     fileListEl.innerHTML = '';
     entries.forEach((e, i) => {
       const row = document.createElement('div');
       row.className = 'filerow';
       row.innerHTML =
-        '<input type="checkbox" data-i="' + i + '" checked>' +
+        '<input type="checkbox" data-i="' + i + '"' + (e.checked ? ' checked' : '') + '>' +
         '<span>' + displayPath(e.path) + '</span>' +
         '<em>' + Math.max(1, Math.round(e.base64.length * 0.75 / 1024)) + ' KB</em>';
       fileListEl.appendChild(row);
     });
-    fileHint.textContent = 'סמנו קבצים כדי להוציא אותם מהקומיט. קבצים אחרים בריפו לא נפגעים.';
+    fileHint.textContent = entries.length ? 'סמנו קבצים כדי להוציא אותם מהקומיט. קבצים אחרים בריפו לא נפגעים.' : '';
   }
+  fileListEl.addEventListener('change', e => {
+    if (e.target.matches('input[type=checkbox]')){
+      entries[parseInt(e.target.dataset.i, 10)].checked = e.target.checked;
+    }
+  });
   stripRootCk.addEventListener('change', renderFileList);
 
   function selectedEntries(){
-    const checks = fileListEl.querySelectorAll('input[type=checkbox]');
-    const chosen = [];
-    checks.forEach(c => { if (c.checked) chosen.push(entries[parseInt(c.dataset.i, 10)]); });
-    return chosen;
+    return entries.filter(e => e.checked);
   }
 
   async function gh(path, token, opts){
