@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>דחיפת ZIP ל-GitHub</title>
+<title>GitVault Pro — ניהול ודחיפת ZIP ל-GitHub</title>
 <style>
   :root{
     --bg: #050a06;
@@ -59,21 +59,22 @@
     max-width: 780px; margin: 0 auto;
   }
 
-  h1{
-    font-size: 24px; font-weight: 700; margin: 0 0 6px;
-    display:flex; align-items:center; gap:12px;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  .header-brand {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 6px;
   }
-  h1 .dot{
-    width:12px;height:12px;border-radius:50%;
-    background:var(--green); flex:none;
-    box-shadow: 0 0 10px var(--green);
+  .brand-icon {
+    width: 38px; height: 38px; color: var(--green);
+    filter: drop-shadow(0 0 8px rgba(63, 185, 80, 0.5));
+  }
+  h1{
+    font-size: 26px; font-weight: 700; margin: 0;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    letter-spacing: -0.5px;
   }
   
   .sub{color:var(--muted); font-size:14px; margin:0 0 24px; line-height:1.6;}
   .sub b{color:var(--text); font-weight:600;}
 
-  /* Header Rate Limit Tag */
   .rate-limit-bar {
     display: inline-flex; align-items: center; gap: 8px;
     background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
@@ -133,6 +134,31 @@
   .row{display:flex; gap:12px;}
   .row > .field{flex:1; min-width:0;}
 
+  .secondary-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 44px;
+  }
+  .secondary-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: var(--green);
+    color: #fff;
+  }
+  .secondary-btn:disabled {
+    opacity: 0.5; cursor: not-allowed;
+  }
+
   .mode{display:flex; gap:10px; margin-bottom:16px;}
   .mode label{
     flex:1; display:flex; align-items:center; gap:8px; cursor:pointer;
@@ -165,7 +191,6 @@
   }
   .drop input{display:none;}
 
-  /* תצוגת עץ תיקיות */
   .filetree{
     margin-top:16px; max-height:260px; overflow-y:auto; 
     background: rgba(0,0,0,0.25);
@@ -208,7 +233,6 @@
     transform: none;
   }
 
-  /* Spinner */
   .spinner {
     width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
     border-top-color: #fff; border-radius: 50%;
@@ -265,7 +289,7 @@
   }
   .clearlink:hover{color: #79c0ff; text-decoration:underline;}
 
-  /* מערכת התראות צפות (Toasts) */
+  /* Toasts */
   #toastContainer {
     position: fixed; top: 20px; left: 20px; z-index: 9999;
     display: flex; flex-direction: column; gap: 10px; max-width: 320px;
@@ -283,15 +307,39 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
 
+  /* Modal */
+  .modal-overlay {
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal-card {
+    background: #0d1610; border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow), var(--green-glow);
+    border-radius: 16px; padding: 24px; width: 90%; max-width: 440px;
+    transform: translateY(10px); transition: transform 0.3s ease;
+  }
+  .modal-overlay.active .modal-card { transform: translateY(0); }
+  .modal-card h3 { margin: 0 0 16px; font-size: 18px; color: var(--text); }
 </style>
 </head>
 <body>
 
   <div id="toastContainer"></div>
 
-  <h1><span class="dot"></span>ZIP → קומיט ל-GitHub</h1>
+  <div class="header-brand">
+    <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
+      <path d="M9 18c-4.51 2-5-2-7-2"></path>
+      <polyline points="16 6 22 6 22 12"></polyline>
+      <line x1="22" y1="6" x2="16" y2="12"></line>
+    </svg>
+    <h1>GitVault Pro</h1>
+  </div>
   <p class="sub">
-    מעלים קובץ ZIP, והדף בונה מתוכו <b>קומיט אחד</b> דרך ה-API של GitHub.
+    ניהול, סנכרון ודחיפת פרויקטים ב-<b>GitHub</b> ישירות מהדפדפן ללא התקנות.
   </p>
 
   <div class="rate-limit-bar">
@@ -299,25 +347,35 @@
   </div>
 
   <section>
-    <h2>חיבור</h2>
+    <h2>חיבור ופרויקטים</h2>
     <div class="row">
       <div class="field" style="flex: 2;">
-        <label for="token">Personal access token (עם הרשאת repo)</label>
+        <label for="token">Personal Access Token (עם הרשאת repo)</label>
         <input type="password" id="token" autocomplete="off" placeholder="ghp_...">
       </div>
       <div class="field" style="flex: 1; display: flex; align-items: flex-end;">
-        <button type="button" class="primary" id="fetchReposBtn" style="padding: 12px; font-size: 14px; margin: 0;">
+        <button type="button" class="primary" id="fetchReposBtn" style="padding: 12px; font-size: 14px; margin: 0; height: 44px;">
           <span class="spinner" id="repoSpinner"></span>
           <span id="fetchBtnText">טען פרויקטים</span>
         </button>
       </div>
     </div>
+    
     <div class="field">
       <label for="repoSelect">בחר ריפו (פרויקט)</label>
-      <select id="repoSelect">
-        <option value="">יש להזין טוקן וללחוץ על טעינה</option>
-      </select>
+      <div style="display:flex; gap:8px;">
+        <select id="repoSelect" style="flex:1;">
+          <option value="">יש להזין טוקן וללחוץ על טעינה</option>
+        </select>
+        <button type="button" class="secondary-btn" id="openNewRepoModalBtn" title="פתיחת מאגר חדש">
+          <span>＋</span> חדש
+        </button>
+        <button type="button" class="secondary-btn" id="downloadRepoBtn" title="הורד את הריפו כקובץ ZIP" disabled>
+          <span>⬇️</span> הורד ZIP
+        </button>
+      </div>
     </div>
+
     <div class="field">
       <label for="base">ברנץ' בסיס (מזוהה אוטומטית)</label>
       <input type="text" id="base" value="main">
@@ -325,22 +383,22 @@
   </section>
 
   <section>
-    <h2>פעולה</h2>
+    <h2>הגדרות קומיט</h2>
     <div class="mode">
       <label id="modeCommitLbl"><input type="radio" name="mode" value="commit" checked> קומיט ישיר לברנץ'</label>
       <label id="modePrLbl"><input type="radio" name="mode" value="pr"> ברנץ' חדש + Pull Request</label>
     </div>
     <div class="field" id="newBranchField" style="display:none;">
       <label for="newBranch">שם הברנץ' החדש</label>
-      <input type="text" id="newBranch" placeholder="update-from-phone">
+      <input type="text" id="newBranch" placeholder="update-from-web">
     </div>
     <div class="field">
       <label for="msg">הודעת קומיט</label>
-      <input type="text" id="msg" placeholder="עדכון מהטלפון">
+      <input type="text" id="msg" placeholder="עדכון קבצים דרך GitVault">
     </div>
     <div class="field" id="prTitleField" style="display:none;">
       <label for="prTitle">כותרת ה-PR</label>
-      <input type="text" id="prTitle" placeholder="עדכון מהטלפון">
+      <input type="text" id="prTitle" placeholder="עדכון קבצים">
     </div>
     <div class="field">
       <label for="prefix">תיקיית יעד בריפו (רשות, למשל src/)</label>
@@ -377,6 +435,28 @@
   <div class="log" id="log" style="display:none;"></div>
   <div class="result" id="result" style="display:none;"></div>
 
+  <!-- Modal ליצירת repository חדש -->
+  <div class="modal-overlay" id="createRepoModal">
+    <div class="modal-card">
+      <h3>יצירת Repository חדש</h3>
+      <div class="field">
+        <label for="newRepoName">שם המאגר (Repository Name)</label>
+        <input type="text" id="newRepoName" placeholder="my-awesome-app">
+      </div>
+      <div class="field">
+        <label for="newRepoDesc">תיאור (רשות)</label>
+        <input type="text" id="newRepoDesc" placeholder="פרויקט שנפתח דרך GitVault Pro">
+      </div>
+      <div class="toggle">
+        <label><input type="checkbox" id="newRepoPrivate" checked> מאגר פרטי (Private)</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button type="button" class="primary" id="confirmCreateRepoBtn">צור מאגר</button>
+        <button type="button" class="secondary-btn" id="cancelCreateRepoBtn" style="flex:none;">ביטול</button>
+      </div>
+    </div>
+  </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
@@ -401,13 +481,17 @@
   const progressFill = $('progressFill');
   const fetchReposBtn = $('fetchReposBtn');
   const repoSelect = $('repoSelect');
+  const downloadRepoBtn = $('downloadRepoBtn');
+  const openNewRepoModalBtn = $('openNewRepoModalBtn');
+  const createRepoModal = $('createRepoModal');
+  const confirmCreateRepoBtn = $('confirmCreateRepoBtn');
+  const cancelCreateRepoBtn = $('cancelCreateRepoBtn');
   const ignorePatternsInput = $('ignorePatterns');
 
-  let entries = []; // {path, base64, checked}
+  let entries = [];
   let commonRoot = '';
   let reposCache = [];
 
-  // Toast Notification System
   function showToast(msg, type = 'info'){
     const container = $('toastContainer');
     const toast = document.createElement('div');
@@ -417,7 +501,6 @@
     setTimeout(() => toast.remove(), 4000);
   }
 
-  // LocalStorage - טעינת נתונים שמורים
   window.addEventListener('DOMContentLoaded', () => {
     const savedToken = localStorage.getItem('gh_token');
     const savedRepo = localStorage.getItem('gh_repo');
@@ -569,7 +652,6 @@
     return p;
   }
 
-  // תצוגת עץ תיקיות (Tree View)
   function renderFileList(){
     fileTreeEl.style.display = entries.length ? '' : 'none';
     $('clearAll').style.display = entries.length ? '' : 'none';
@@ -582,9 +664,8 @@
       return;
     }
 
-    // ביוני עץ תיקיות היררכי
     const tree = {};
-    filtered.forEach((e, idx) => {
+    filtered.forEach((e) => {
       const parts = displayPath(e.path).split('/');
       let curr = tree;
       parts.forEach((part, i) => {
@@ -630,7 +711,6 @@
   });
   stripRootCk.addEventListener('change', renderFileList);
 
-  // קריאה ל-API של GitHub כולל בדיקת Rate Limit
   async function gh(path, token, opts){
     opts = opts || {};
     const res = await fetch('https://api.github.com' + path, {
@@ -644,7 +724,6 @@
       body: opts.body ? JSON.stringify(opts.body) : undefined
     });
 
-    // עדכון מחוון Rate Limit
     const remaining = res.headers.get('x-ratelimit-remaining');
     const limit = res.headers.get('x-ratelimit-limit');
     if (remaining && limit) {
@@ -668,24 +747,24 @@
       repoSelect.innerHTML = '';
       if (!reposCache || reposCache.length === 0) {
         repoSelect.innerHTML = '<option value="">לא נמצאו פרויקטים</option>';
+        downloadRepoBtn.disabled = true;
       } else {
         reposCache.forEach(r => {
           const opt = document.createElement('option');
           opt.value = r.full_name;
-          opt.textContent = r.full_name;
+          opt.textContent = r.full_name + (r.private ? ' 🔒' : '');
           repoSelect.appendChild(opt);
         });
         if (autoSelectRepo) {
           repoSelect.value = autoSelectRepo;
-          triggerRepoChange();
-        } else if (reposCache.length > 0) {
-          triggerRepoChange();
         }
+        triggerRepoChange();
         showToast('רשימת הפרויקטים נטענה', 'info');
       }
     } catch(err) {
       showToast('שגיאה בטעינת הפרויקטים: ' + err.message, 'error');
       repoSelect.innerHTML = '<option value="">שגיאה בטעינה</option>';
+      downloadRepoBtn.disabled = true;
     } finally {
       $('repoSpinner').style.display = 'none';$('fetchBtnText').textContent = 'טען פרויקטים';
       fetchReposBtn.disabled = false;
@@ -694,10 +773,13 @@
 
   function triggerRepoChange() {
     const selected = repoSelect.value;
-    if (!selected) return;
+    if (!selected) {
+      downloadRepoBtn.disabled = true;
+      return;
+    }
+    downloadRepoBtn.disabled = false;
     localStorage.setItem('gh_repo', selected);
     
-    // זיהוי ברנץ' אוטומטי מתוך הקאש
     const rData = reposCache.find(r => r.full_name === selected);
     if (rData && rData.default_branch) {
       $('base').value = rData.default_branch;
@@ -712,13 +794,89 @@
 
   repoSelect.addEventListener('change', triggerRepoChange);
 
+  // הורדת ריפו קיים כ-ZIP
+  downloadRepoBtn.addEventListener('click', async () => {
+    const token = $('token').value.trim();
+    const fullRepo = repoSelect.value;
+    const base = $('base').value.trim() || 'main';
+
+    if (!token || !fullRepo) {
+      showToast('נא לבחור ריפו ולהזין טוקן', 'error');
+      return;
+    }
+
+    showToast('מכין הורדת ZIP מ-GitHub...', 'info');
+    try {
+      const res = await fetch(`https://api.github.com/repos/${fullRepo}/zipball/${base}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) throw new Error('שגיאה בהורדת הקובץ מ-GitHub');
+      
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${fullRepo.replace('/', '-')}-${base}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('הורדת הקובץ החלה!', 'success');
+    } catch (err) {
+      showToast('שגיאה בהורדת הריפו: ' + err.message, 'error');
+    }
+  });
+
+  // מודאל יצירת Repository חדש
+  openNewRepoModalBtn.addEventListener('click', () => {
+    const token = $('token').value.trim();
+    if (!token) { showToast('נא להזין טוקן אישי תחילה.', 'error'); return; }
+    createRepoModal.classList.add('active');
+  });
+
+  cancelCreateRepoBtn.addEventListener('click', () => {
+    createRepoModal.classList.remove('active');
+  });
+
+  confirmCreateRepoBtn.addEventListener('click', async () => {
+    const token = $('token').value.trim();
+    const name = $('newRepoName').value.trim();
+    const desc = $('newRepoDesc').value.trim();
+    const isPrivate = $('newRepoPrivate').checked;
+
+    if (!name) {
+      showToast('נא להזין שם למאגר החדש.', 'error');
+      return;
+    }
+
+    try {
+      showToast('יוצר מאגר חדש ב-GitHub...', 'info');
+      const newRepo = await gh('/user/repos', token, {
+        method: 'POST',
+        body: {
+          name: name,
+          description: desc,
+          private: isPrivate,
+          auto_init: true
+        }
+      });
+
+      showToast(`המאגר ${newRepo.full_name} נוצר בהצלחה!`, 'success');
+      createRepoModal.classList.remove('active');
+      $('newRepoName').value = '';$('newRepoDesc').value = '';
+      
+      await loadRepos(token, newRepo.full_name);
+    } catch (err) {
+      showToast('שגיאה ביצירת המאגר: ' + err.message, 'error');
+    }
+  });
+
   function selectedEntries(){
     return entries.filter(e => e.checked && !isIgnored(displayPath(e.path)));
   }
 
-  // העלאה מקבילית באצוות (Concurrent Uploading)
   async function uploadBlobsConcurrently(chosen, fullRepo, token, prefix) {
-    const CONCURRENCY = 5; // עד 5 העלאות במקביל
+    const CONCURRENCY = 5;
     let done = 0;
     const tree = [];
     const queue = [...chosen];
@@ -758,7 +916,7 @@
     const base = $('base').value.trim() || 'main';
     const mode = document.querySelector('input[name=mode]:checked').value;
     const newBranch = $('newBranch').value.trim();
-    const commitMsg = $('msg').value.trim() || 'עדכון מהטלפון';
+    const commitMsg = $('msg').value.trim() || 'עדכון דרך GitVault Pro';
     const prTitle = $('prTitle').value.trim() || commitMsg;
     const prefix = $('prefix').value.trim().replace(/^\/+\vert{}\/+$/g, '');
 
