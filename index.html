@@ -409,8 +409,8 @@
   <section>
     <h2>קבצים וסינון</h2>
     <div class="field">
-      <label for="ignorePatterns">תבניות להתעלמות / סינון (מופרדות בסימן פסיק)</label>
-      <input type="text" id="ignorePatterns" placeholder="node_modules/, *.map, .DS_Store, .git/">
+      <label for="ignorePatterns">תבניות להתעלמות / סינון (נטענות אוטומטית מ-.gitignore)</label>
+      <input type="text" id="ignorePatterns" placeholder="משתנה אוטומטית מ-.gitignore או מוזן ידנית">
     </div>
     <div class="drop" id="drop">
       <input type="file" id="zipInput" multiple>
@@ -523,6 +523,21 @@
     renderFileList();
   });
 
+  function parseAndApplyGitignore(text) {
+    if (!text) return;
+    const lines = text.split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith('#'));
+    
+    if (!lines.length) return;
+
+    const current = ignorePatternsInput.value.split(',').map(p => p.trim()).filter(Boolean);
+    const combined = Array.from(new Set([...current, ...lines]));
+    ignorePatternsInput.value = combined.join(', ');
+    localStorage.setItem('gh_ignore', ignorePatternsInput.value);
+    renderFileList();
+  }
+
   function showProgress(text, done, total){
     progressWrap.style.display = '';
     const pct = total ? Math.round((done / total) * 100) : 0;
@@ -603,6 +618,14 @@
         if (isZip){
           const zip = await JSZip.loadAsync(file);
           const paths = []; const tasks = [];
+          
+          let gitignoreEntry = zip.file('.gitignore') || Object.values(zip.files).find(f => f.name.endsWith('/.gitignore'));
+          if (gitignoreEntry) {
+            const gText = await gitignoreEntry.async('text');
+            parseAndApplyGitignore(gText);
+            showToast('נטענו תבניות סינון מתוך .gitignore שבקובץ ה-ZIP', 'info');
+          }
+
           zip.forEach((relPath, zEntry) => {
             if (zEntry.dir) return;
             if (relPath.startsWith('__MACOSX/') || relPath.endsWith('.DS_Store')) return;
@@ -619,6 +642,11 @@
             }
           }
         } else {
+          if (file.name === '.gitignore') {
+            const gText = await file.text();
+            parseAndApplyGitignore(gText);
+            showToast('נטענו תבניות סינון מתוך .gitignore', 'info');
+          }
           const relPath = file.webkitRelativePath && file.webkitRelativePath.length ? file.webkitRelativePath : file.name;
           const buf = await file.arrayBuffer();
           addOrReplaceEntry(relPath, arrayBufferToBase64(buf));
@@ -639,9 +667,10 @@
   function isIgnored(path) {
     const patterns = ignorePatternsInput.value.split(',').map(p => p.trim()).filter(Boolean);
     return patterns.some(pat => {
-      if (pat.endsWith('/') && path.includes(pat)) return true;
-      if (pat.startsWith('*') && path.endsWith(pat.slice(1))) return true;
-      return path.includes(pat);
+      let cleanedPat = pat.replace(/^\//, '');
+      if (cleanedPat.endsWith('/') && path.includes(cleanedPat)) return true;
+      if (cleanedPat.startsWith('*') && path.endsWith(cleanedPat.slice(1))) return true;
+      return path.includes(cleanedPat);
     });
   }
 
@@ -738,6 +767,23 @@
     return data;
   }
 
+  async function fetchRepoGitignore(fullRepo, base, token) {
+    if (!fullRepo || !token) return;
+    try {
+      const data = await gh(`/repos/${fullRepo}/contents/.gitignore?ref=${base}`, token);
+      if (data && data.content) {
+        const binary = atob(data.content.replace(/\n/g, ''));
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const text = new TextDecoder('utf-8').decode(bytes);
+        parseAndApplyGitignore(text);
+        showToast('נטענו תבניות סינון מתוך .gitignore של הריפו הנבחר', 'info');
+      }
+    } catch (e) {
+      // .gitignore does not exist in repo, proceed normally
+    }
+  }
+
   async function loadRepos(token, autoSelectRepo) {
     $('repoSpinner').style.display = 'inline-block';$('fetchBtnText').textContent = 'טוען...';
     fetchReposBtn.disabled = true;
@@ -773,6 +819,7 @@
 
   function triggerRepoChange() {
     const selected = repoSelect.value;
+    const token = $('token').value.trim();
     if (!selected) {
       downloadRepoBtn.disabled = true;
       return;
@@ -784,6 +831,8 @@
     if (rData && rData.default_branch) {
       $('base').value = rData.default_branch;
     }
+    
+    fetchRepoGitignore(selected, $('base').value.trim() || 'main', token);
   }
 
   fetchReposBtn.addEventListener('click', () => {
@@ -794,7 +843,6 @@
 
   repoSelect.addEventListener('change', triggerRepoChange);
 
-  // הורדת ריפו קיים כ-ZIP
   downloadRepoBtn.addEventListener('click', async () => {
     const token = $('token').value.trim();
     const fullRepo = repoSelect.value;
@@ -827,7 +875,6 @@
     }
   });
 
-  // מודאל יצירת Repository חדש
   openNewRepoModalBtn.addEventListener('click', () => {
     const token = $('token').value.trim();
     if (!token) { showToast('נא להזין טוקן אישי תחילה.', 'error'); return; }
