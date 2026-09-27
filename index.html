@@ -49,13 +49,14 @@
   }
   .field{margin-bottom:12px;}
   .field:last-child{margin-bottom:0;}
-  input[type=text], input[type=password], textarea{
+  /* הוספתי תמיכה בעיצוב גם לתגית select */
+  input[type=text], input[type=password], textarea, select {
     width:100%; background:var(--panel-2); border:1px solid var(--border);
     color:var(--text); border-radius:6px; padding:9px 10px; font-size:14px;
     font-family:var(--mono);
   }
   textarea{resize:vertical; min-height:56px; font-family:var(--sans);}
-  input:focus, textarea:focus, button:focus, .filerow input:focus{
+  input:focus, textarea:focus, button:focus, .filerow input:focus, select:focus{
     outline:2px solid var(--blue); outline-offset:1px;
   }
   .row{display:flex; gap:10px;}
@@ -151,19 +152,20 @@
 
   <section>
     <h2>חיבור</h2>
-    <div class="field">
-      <label for="token">Personal access token (עם הרשאת repo)</label>
-      <input type="password" id="token" autocomplete="off" placeholder="ghp_...">
-    </div>
     <div class="row">
-      <div class="field">
-        <label for="owner">בעל הריפו (משתמש/ארגון)</label>
-        <input type="text" id="owner" placeholder="octocat">
+      <div class="field" style="flex: 2;">
+        <label for="token">Personal access token (עם הרשאת repo)</label>
+        <input type="password" id="token" autocomplete="off" placeholder="ghp_...">
       </div>
-      <div class="field">
-        <label for="repo">שם הריפו</label>
-        <input type="text" id="repo" placeholder="my-project">
+      <div class="field" style="flex: 1; display: flex; align-items: flex-end;">
+        <button type="button" class="primary" id="fetchReposBtn" style="padding: 9px; font-size: 14px; margin: 0;">טען פרויקטים</button>
       </div>
+    </div>
+    <div class="field">
+      <label for="repoSelect">בחר ריפו (פרויקט)</label>
+      <select id="repoSelect">
+        <option value="">יש להזין טוקן וללחוץ על טעינה</option>
+      </select>
     </div>
     <div class="field">
       <label for="base">ברנץ' בסיס</label>
@@ -238,6 +240,8 @@
   const progressText = $('progressText');
   const progressPct = $('progressPct');
   const progressFill = $('progressFill');
+  const fetchReposBtn = $('fetchReposBtn');
+  const repoSelect = $('repoSelect');
 
   function showProgress(text, done, total){
     progressWrap.style.display = '';
@@ -386,10 +390,6 @@
   });
   stripRootCk.addEventListener('change', renderFileList);
 
-  function selectedEntries(){
-    return entries.filter(e => e.checked);
-  }
-
   async function gh(path, token, opts){
     opts = opts || {};
     const res = await fetch('https://api.github.com' + path, {
@@ -410,6 +410,43 @@
     return data;
   }
 
+  // אירוע לחיצה על כפתור טעינת פרויקטים
+  fetchReposBtn.addEventListener('click', async () => {
+    const token = $('token').value.trim();
+    if (!token) {
+      alert('נא להזין טוקן אישי תחילה.');
+      return;
+    }
+    fetchReposBtn.disabled = true;
+    fetchReposBtn.textContent = 'טוען...';
+    repoSelect.innerHTML = '<option value="">טוען רשימה...</option>';
+    
+    try {
+      const repos = await gh('/user/repos?sort=updated&per_page=100', token);
+      repoSelect.innerHTML = '';
+      if (!repos || repos.length === 0) {
+        repoSelect.innerHTML = '<option value="">לא נמצאו פרויקטים</option>';
+      } else {
+        repos.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.full_name; // מכיל את המבנה owner/repo
+          opt.textContent = r.full_name;
+          repoSelect.appendChild(opt);
+        });
+      }
+    } catch(err) {
+      alert('שגיאה בטעינת הפרויקטים: ' + err.message);
+      repoSelect.innerHTML = '<option value="">שגיאה בטעינה</option>';
+    } finally {
+      fetchReposBtn.disabled = false;
+      fetchReposBtn.textContent = 'טען פרויקטים';
+    }
+  });
+
+  function selectedEntries(){
+    return entries.filter(e => e.checked);
+  }
+
   pushBtn.addEventListener('click', async () => {
     resultEl.style.display = 'none';
     logEl.innerHTML = '';
@@ -417,8 +454,7 @@
     hideProgress();
 
     const token = $('token').value.trim();
-    const owner = $('owner').value.trim();
-    const repo = $('repo').value.trim();
+    const fullRepo = repoSelect.value;
     const base = $('base').value.trim() || 'main';
     const mode = document.querySelector('input[name=mode]:checked').value;
     const newBranch = $('newBranch').value.trim();
@@ -426,8 +462,8 @@
     const prTitle = $('prTitle').value.trim() || commitMsg;
     const prefix = $('prefix').value.trim().replace(/^\/+|\/+$/g, '');
 
-    if (!token || !owner || !repo){
-      log('נא למלא טוקן, בעלים ושם ריפו.', 'err');
+    if (!token || !fullRepo){
+      log('נא למלא טוקן ולבחור ריפו מהרשימה.', 'err');
       return;
     }
     if (mode === 'pr' && !newBranch){
@@ -445,14 +481,14 @@
 
     try{
       log('שולף את ' + base + ' ...', 'info');
-      const baseRef = await gh('/repos/' + owner + '/' + repo + '/git/ref/heads/' + base, token);
+      const baseRef = await gh('/repos/' + fullRepo + '/git/ref/heads/' + base, token);
       const baseCommitSha = baseRef.object.sha;
       log('בסיס: ' + baseCommitSha.slice(0,7), 'ok');
 
       if (mode === 'pr'){
         log('יוצר ברנץ׳ ' + newBranch + ' ...', 'info');
         try{
-          await gh('/repos/' + owner + '/' + repo + '/git/refs', token, {
+          await gh('/repos/' + fullRepo + '/git/refs', token, {
             method: 'POST',
             body: { ref: 'refs/heads/' + newBranch, sha: baseCommitSha }
           });
@@ -465,9 +501,9 @@
       }
 
       log('שולף את הברנץ׳ ' + targetBranch + ' ...', 'info');
-      const targetRef = await gh('/repos/' + owner + '/' + repo + '/git/ref/heads/' + targetBranch, token);
+      const targetRef = await gh('/repos/' + fullRepo + '/git/ref/heads/' + targetBranch, token);
       const parentCommitSha = targetRef.object.sha;
-      const parentCommit = await gh('/repos/' + owner + '/' + repo + '/git/commits/' + parentCommitSha, token);
+      const parentCommit = await gh('/repos/' + fullRepo + '/git/commits/' + parentCommitSha, token);
       const baseTreeSha = parentCommit.tree.sha;
 
       log('מעלה ' + chosen.length + ' קבצים (blobs) ...', 'info');
@@ -475,7 +511,7 @@
       const tree = [];
       let done = 0;
       for (const e of chosen){
-        const blob = await gh('/repos/' + owner + '/' + repo + '/git/blobs', token, {
+        const blob = await gh('/repos/' + fullRepo + '/git/blobs', token, {
           method: 'POST',
           body: { content: e.base64, encoding: 'base64' }
         });
@@ -489,32 +525,32 @@
       hideProgress();
 
       log('בונה עץ קבצים חדש ...', 'info');
-      const newTree = await gh('/repos/' + owner + '/' + repo + '/git/trees', token, {
+      const newTree = await gh('/repos/' + fullRepo + '/git/trees', token, {
         method: 'POST',
         body: { base_tree: baseTreeSha, tree: tree }
       });
 
       log('יוצר קומיט ...', 'info');
-      const newCommit = await gh('/repos/' + owner + '/' + repo + '/git/commits', token, {
+      const newCommit = await gh('/repos/' + fullRepo + '/git/commits', token, {
         method: 'POST',
         body: { message: commitMsg, tree: newTree.sha, parents: [parentCommitSha] }
       });
       log('קומיט נוצר: ' + newCommit.sha.slice(0,7), 'ok');
 
       log('מעדכן את ' + targetBranch + ' ...', 'info');
-      await gh('/repos/' + owner + '/' + repo + '/git/refs/heads/' + targetBranch, token, {
+      await gh('/repos/' + fullRepo + '/git/refs/heads/' + targetBranch, token, {
         method: 'PATCH',
         body: { sha: newCommit.sha, force: false }
       });
       log('הברנץ׳ עודכן.', 'ok');
 
       let resultHtml = 'הקומיט נדחף בהצלחה: ' +
-        '<a href="https://github.com/' + owner + '/' + repo + '/commit/' + newCommit.sha + '" target="_blank">' +
+        '<a href="https://github.com/' + fullRepo + '/commit/' + newCommit.sha + '" target="_blank">' +
         newCommit.sha.slice(0,7) + '</a>';
 
       if (mode === 'pr'){
         log('פותח Pull Request ...', 'info');
-        const pr = await gh('/repos/' + owner + '/' + repo + '/pulls', token, {
+        const pr = await gh('/repos/' + fullRepo + '/pulls', token, {
           method: 'POST',
           body: { title: prTitle, head: newBranch, base: base, body: '' }
         });
