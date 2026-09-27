@@ -520,6 +520,9 @@
         tree.push({ path: p, mode: '100644', type: 'blob', sha: blob.sha });
         done++;
         showProgress('מעלה קבצים', done, chosen.length);
+        
+        // השורה החדשה שמדפיסה את התקדמות הקבצים ללוג:
+        log('קובץ הועלה (' + done + '/' + chosen.length + '): ' + displayPath(e.path), 'info');
       }
       log('כל ה-blobs הועלו.', 'ok');
       hideProgress();
