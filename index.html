@@ -6,9 +6,8 @@
 <title>דחיפת ZIP ל-GitHub</title>
 <style>
   :root{
-    /* צבעי בסיס ומשתני זכוכית */
     --bg: #050a06;
-    --glass-bg: rgba(20, 35, 25, 0.4);
+    --glass-bg: rgba(20, 35, 25, 0.45);
     --glass-border: rgba(46, 160, 67, 0.25);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
     
@@ -35,7 +34,6 @@
     overflow-x: hidden;
   }
 
-  /* אפקט הילות רקע להדגשת הזכוכית */
   body::before {
     content: '';
     position: fixed;
@@ -56,9 +54,9 @@
   }
 
   body{
-    padding: 30px 16px calc(30px + env(safe-area-inset-bottom,0px));
+    padding: 30px 16px calc(50px + env(safe-area-inset-bottom,0px));
     padding-top: calc(30px + env(safe-area-inset-top,0px));
-    max-width: 760px; margin: 0 auto;
+    max-width: 780px; margin: 0 auto;
   }
 
   h1{
@@ -72,10 +70,18 @@
     box-shadow: 0 0 10px var(--green);
   }
   
-  .sub{color:var(--muted); font-size:14px; margin:0 0 30px; line-height:1.6;}
+  .sub{color:var(--muted); font-size:14px; margin:0 0 24px; line-height:1.6;}
   .sub b{color:var(--text); font-weight:600;}
 
-  /* עיצוב זכוכית (Glassmorphism) לקופסאות */
+  /* Header Rate Limit Tag */
+  .rate-limit-bar {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+    padding: 6px 12px; border-radius: 20px; font-size: 12px; font-family: var(--mono);
+    margin-bottom: 20px; color: var(--muted);
+  }
+  .rate-limit-bar span { color: var(--blue); font-weight: bold; }
+
   section, .progress-wrap, .log {
     background: var(--glass-bg);
     backdrop-filter: blur(16px);
@@ -105,7 +111,6 @@
   .field{margin-bottom:16px;}
   .field:last-child{margin-bottom:0;}
   
-  /* שדות הזנה מותאמים לזכוכית */
   input[type=text], input[type=password], textarea, select {
     width:100%; 
     background: rgba(0, 0, 0, 0.25); 
@@ -128,7 +133,6 @@
   .row{display:flex; gap:12px;}
   .row > .field{flex:1; min-width:0;}
 
-  /* כפתורי בחירה (Radio) */
   .mode{display:flex; gap:10px; margin-bottom:16px;}
   .mode label{
     flex:1; display:flex; align-items:center; gap:8px; cursor:pointer;
@@ -146,11 +150,10 @@
     box-shadow: inset 0 0 10px rgba(46, 160, 67, 0.1);
   }
 
-  /* אזור גרירת הקבצים */
   .drop{
     border: 2px dashed rgba(46, 160, 67, 0.4); 
     background: rgba(46, 160, 67, 0.03);
-    border-radius: 12px; padding: 30px 14px;
+    border-radius: 12px; padding: 26px 14px;
     text-align:center; color:var(--muted); font-size:14px; cursor:pointer;
     transition: all 0.3s ease;
   }
@@ -162,30 +165,24 @@
   }
   .drop input{display:none;}
 
-  /* רשימת קבצים מודרנית */
-  .filelist{
-    margin-top:16px; max-height:220px; overflow-y:auto; 
-    background: rgba(0,0,0,0.2);
+  /* תצוגת עץ תיקיות */
+  .filetree{
+    margin-top:16px; max-height:260px; overflow-y:auto; 
+    background: rgba(0,0,0,0.25);
     border: 1px solid rgba(255,255,255,0.08); 
-    border-radius:10px;
+    border-radius:10px; padding: 10px;
+    font-family: var(--mono); font-size: 13px;
   }
-  .filerow{
-    display:flex; align-items:center; gap:10px; padding:10px 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.05); 
-    font-family:var(--mono); font-size:13px;
-    transition: background 0.2s ease;
-  }
-  .filerow:hover { background: rgba(255,255,255,0.03); }
-  .filerow:last-child{border-bottom:none;}
-  .filerow input{flex:none; accent-color: var(--green);}
-  .filerow span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .filerow em{color:var(--muted); font-style:normal; margin-inline-start:auto; flex:none;}
+  .tree-node { margin-right: 14px; }
+  .tree-folder { font-weight: bold; color: var(--blue); margin: 4px 0; cursor: pointer; }
+  .tree-file { display: flex; align-items: center; gap: 8px; padding: 3px 0; color: var(--text); }
+  .tree-file input { accent-color: var(--green); }
+  .tree-file em { color: var(--muted); font-style: normal; margin-inline-start: auto; font-size: 11.5px; }
 
   .toggle{display:flex; align-items:center; gap:8px; font-size:13.5px; margin-top:14px; color:var(--muted); cursor: pointer;}
   .toggle input{flex:none; accent-color: var(--green);}
   .toggle:hover { color: var(--text); }
 
-  /* כפתורים ראשיים מוארים */
   button.primary{
     width:100%; 
     background: linear-gradient(135deg, var(--green) 0%, #238636 100%);
@@ -195,6 +192,7 @@
     transition: all 0.3s ease;
     text-shadow: 0 1px 3px rgba(0,0,0,0.3);
     box-shadow: 0 4px 15px rgba(46, 160, 67, 0.2);
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   }
   button.primary:hover:not(:disabled){
     background: linear-gradient(135deg, var(--green-hover) 0%, var(--green) 100%);
@@ -210,7 +208,14 @@
     transform: none;
   }
 
-  /* בר התקדמות */
+  /* Spinner */
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.8s linear infinite; display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   .progress-wrap{ margin-top:20px; padding: 16px; display:none; }
   .progress-label{
     display:flex; justify-content:space-between; font-family:var(--mono); font-size:13px;
@@ -228,7 +233,6 @@
     box-shadow: 0 0 10px rgba(86, 211, 100, 0.6);
   }
 
-  /* לוג */
   .log{
     margin-top:20px; padding:16px; font-family:var(--mono); font-size:13px; color:#c9d1d9;
     max-height:280px; overflow-y:auto; direction:ltr; text-align:left;
@@ -236,7 +240,6 @@
   .log::-webkit-scrollbar { width: 8px; }
   .log::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
   .log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
-  .log::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
   
   .log .l{padding:3px 0; white-space:pre-wrap; word-break:break-word; border-bottom: 1px solid rgba(255,255,255,0.03);}
   .log .l:last-child { border-bottom: none; }
@@ -244,7 +247,6 @@
   .log .err{color:var(--red); text-shadow: 0 0 5px rgba(248,81,73,0.3);}
   .log .info{color:var(--blue); text-shadow: 0 0 5px rgba(88,166,255,0.3);}
 
-  /* תוצאה */
   .result{
     margin-top:20px; padding:16px; border-radius:12px; font-size:14.5px;
     background: rgba(46, 160, 67, 0.15); 
@@ -254,32 +256,47 @@
     box-shadow: var(--green-glow);
   }
   .result a{color:var(--blue); font-weight: 600; text-decoration: none;}
-  .result a:hover { text-decoration: underline; text-shadow: 0 0 8px rgba(88,166,255,0.5); }
+  .result a:hover { text-decoration: underline; }
 
   .hint{font-size:12.5px; color:var(--muted); margin-top:8px; line-height:1.5;}
-  .hint b{color:var(--text);}
-  
   .clearlink{
     background:none; border:none; color:var(--blue); font-size:13px; font-family:var(--sans);
     cursor:pointer; padding:10px 0 0; margin:0; transition: color 0.2s;
   }
   .clearlink:hover{color: #79c0ff; text-decoration:underline;}
 
-  /* התאמה לפס גלילה כללי */
-  ::-webkit-scrollbar { width: 10px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
-  ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+  /* מערכת התראות צפות (Toasts) */
+  #toastContainer {
+    position: fixed; top: 20px; left: 20px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 10px; max-width: 320px;
+  }
+  .toast {
+    background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border); color: var(--text);
+    padding: 12px 16px; border-radius: 10px; font-size: 13.5px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s ease, fadeOut 0.3s ease 3.7s forwards;
+  }
+  .toast-success { border-color: var(--green); }
+  .toast-error { border-color: var(--red); }
+  .toast-info { border-color: var(--blue); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
 
 </style>
 </head>
 <body>
 
+  <div id="toastContainer"></div>
+
   <h1><span class="dot"></span>ZIP → קומיט ל-GitHub</h1>
   <p class="sub">
-    מעלים קובץ ZIP, והדף בונה מתוכו <b>קומיט אחד</b> (או Pull Request) דרך ה-API של GitHub —
-    בלי לגעת בכל קובץ בנפרד. הטוקן שלכם נשאר בדפדפן ונשלח ישירות ל-<b>api.github.com</b> בלבד.
+    מעלים קובץ ZIP, והדף בונה מתוכו <b>קומיט אחד</b> דרך ה-API של GitHub.
   </p>
+
+  <div class="rate-limit-bar">
+    GitHub API Rate Limit: <span id="rateLimitVal">לא נבדק</span>
+  </div>
 
   <section>
     <h2>חיבור</h2>
@@ -289,7 +306,10 @@
         <input type="password" id="token" autocomplete="off" placeholder="ghp_...">
       </div>
       <div class="field" style="flex: 1; display: flex; align-items: flex-end;">
-        <button type="button" class="primary" id="fetchReposBtn" style="padding: 12px; font-size: 14px; margin: 0;">טען פרויקטים</button>
+        <button type="button" class="primary" id="fetchReposBtn" style="padding: 12px; font-size: 14px; margin: 0;">
+          <span class="spinner" id="repoSpinner"></span>
+          <span id="fetchBtnText">טען פרויקטים</span>
+        </button>
       </div>
     </div>
     <div class="field">
@@ -299,7 +319,7 @@
       </select>
     </div>
     <div class="field">
-      <label for="base">ברנץ' בסיס</label>
+      <label for="base">ברנץ' בסיס (מזוהה אוטומטית)</label>
       <input type="text" id="base" value="main">
     </div>
   </section>
@@ -329,19 +349,27 @@
   </section>
 
   <section>
-    <h2>קבצים</h2>
+    <h2>קבצים וסינון</h2>
+    <div class="field">
+      <label for="ignorePatterns">תבניות להתעלמות / סינון (מופרדות בסימן פסיק)</label>
+      <input type="text" id="ignorePatterns" placeholder="node_modules/, *.map, .DS_Store, .git/">
+    </div>
     <div class="drop" id="drop">
       <input type="file" id="zipInput" multiple>
       <span id="dropText">הקישו כדי לבחור ZIP ו/או קבצים בודדים, או גררו לכאן</span>
     </div>
-    <div class="hint">אפשר לבחור קובץ ZIP אחד (יתפרק אוטומטית), קבצים בודדים, או שילוב של שניהם — כל בחירה מצטרפת לרשימה למטה.</div>
-    <label class="toggle"><input type="checkbox" id="stripRoot"> להסיר תיקיית-שורש משותפת מתוך ZIP (זוהתה אוטומטית כשרלוונטי)</label>
-    <div class="filelist" id="fileList" style="display:none;"></div>
+    <label class="toggle"><input type="checkbox" id="stripRoot"> להסיר תיקיית-שורש משותפת מתוך ZIP</label>
+    
+    <div class="filetree" id="fileTree" style="display:none;"></div>
     <div class="hint" id="fileHint"></div>
     <button type="button" class="clearlink" id="clearAll" style="display:none;">נקו את כל הרשימה</button>
   </section>
 
-  <button class="primary" id="pushBtn" disabled>בחרו קבצים כדי להמשיך</button>
+  <button class="primary" id="pushBtn" disabled>
+    <span class="spinner" id="pushSpinner"></span>
+    <span id="pushBtnText">בחרו קבצים כדי להמשיך</span>
+  </button>
+
   <div class="progress-wrap" id="progressWrap">
     <div class="progress-label"><span id="progressText">מעלה קבצים...</span><span id="progressPct">0%</span></div>
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
@@ -362,7 +390,7 @@
   const dropText = $('dropText');
   const zipInput = $('zipInput');
   const stripRootCk = $('stripRoot');
-  const fileListEl = $('fileList');
+  const fileTreeEl = $('fileTree');
   const fileHint = $('fileHint');
   const pushBtn = $('pushBtn');
   const logEl = $('log');
@@ -373,6 +401,44 @@
   const progressFill = $('progressFill');
   const fetchReposBtn = $('fetchReposBtn');
   const repoSelect = $('repoSelect');
+  const ignorePatternsInput = $('ignorePatterns');
+
+  let entries = []; // {path, base64, checked}
+  let commonRoot = '';
+  let reposCache = [];
+
+  // Toast Notification System
+  function showToast(msg, type = 'info'){
+    const container = $('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  }
+
+  // LocalStorage - טעינת נתונים שמורים
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedToken = localStorage.getItem('gh_token');
+    const savedRepo = localStorage.getItem('gh_repo');
+    const savedIgnore = localStorage.getItem('gh_ignore');
+    
+    if (savedToken) $('token').value = savedToken;
+    if (savedIgnore) ignorePatternsInput.value = savedIgnore;
+    
+    if (savedToken) {
+      loadRepos(savedToken, savedRepo);
+    }
+  });
+
+  $('token').addEventListener('change', () => {
+    localStorage.setItem('gh_token', $('token').value.trim());
+  });
+
+  ignorePatternsInput.addEventListener('change', () => {
+    localStorage.setItem('gh_ignore', ignorePatternsInput.value.trim());
+    renderFileList();
+  });
 
   function showProgress(text, done, total){
     progressWrap.style.display = '';
@@ -386,9 +452,6 @@
     progressFill.style.width = '0%';
   }
 
-  let entries = []; // {path, base64, checked}
-  let commonRoot = '';
-
   function updateModeUI(){
     const mode = document.querySelector('input[name=mode]:checked').value;
     newBranchField.style.display = mode === 'pr' ? '' : 'none';
@@ -400,23 +463,22 @@
   updateModeUI();
 
   dropEl.addEventListener('click', () => zipInput.click());
-  dropEl.addEventListener('dragover', e => { e.preventDefault(); dropEl.style.borderColor = 'var(--green-hover)'; dropEl.style.boxShadow = 'var(--green-glow)'; });
-  dropEl.addEventListener('dragleave', () => { dropEl.style.borderColor = ''; dropEl.style.boxShadow = 'none';});
+  dropEl.addEventListener('dragover', e => { e.preventDefault(); dropEl.style.borderColor = 'var(--green-hover)'; });
+  dropEl.addEventListener('dragleave', () => { dropEl.style.borderColor = ''; });
   dropEl.addEventListener('drop', e => {
-    e.preventDefault(); dropEl.style.borderColor = ''; dropEl.style.boxShadow = 'none';
+    e.preventDefault(); dropEl.style.borderColor = '';
     if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
   zipInput.addEventListener('change', () => {
     if (zipInput.files.length) handleFiles(zipInput.files);
-    zipInput.value = ''; // allow re-picking the same file(s) again later
+    zipInput.value = '';
   });
   $('clearAll').addEventListener('click', () => {
-    entries = [];
-    commonRoot = '';
+    entries = []; commonRoot = '';
     renderFileList();
     dropText.textContent = 'הקישו כדי לבחור ZIP ו/או קבצים בודדים, או גררו לכאן';
     pushBtn.disabled = true;
-    pushBtn.textContent = 'בחרו קבצים כדי להמשיך';
+    $('pushBtnText').textContent = 'בחרו קבצים כדי להמשיך';
   });
 
   function log(msg, cls){
@@ -457,8 +519,7 @@
                       file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
         if (isZip){
           const zip = await JSZip.loadAsync(file);
-          const paths = [];
-          const tasks = [];
+          const paths = []; const tasks = [];
           zip.forEach((relPath, zEntry) => {
             if (zEntry.dir) return;
             if (relPath.startsWith('__MACOSX/') || relPath.endsWith('.DS_Store')) return;
@@ -467,7 +528,6 @@
           });
           await Promise.all(tasks);
 
-          // detect a shared top-level folder (from this zip's own paths)
           if (paths.length){
             const first = paths[0].split('/');
             if (first.length > 1){
@@ -485,11 +545,21 @@
       renderFileList();
       dropText.textContent = entries.length + ' קבצים ברשימה — הקישו כדי להוסיף עוד';
       pushBtn.disabled = entries.length === 0;
-      pushBtn.textContent = 'דחיפה ל-GitHub';
+      $('pushBtnText').textContent = 'דחיפה ל-GitHub';
+      showToast('הקבצים נטענו בהצלחה', 'success');
     }catch(err){
       dropText.textContent = 'שגיאה בקריאת הקבצים';
-      log('שגיאה בקריאת קבצים: ' + err.message, 'err');
+      showToast('שגיאה בקריאת הקבצים: ' + err.message, 'error');
     }
+  }
+
+  function isIgnored(path) {
+    const patterns = ignorePatternsInput.value.split(',').map(p => p.trim()).filter(Boolean);
+    return patterns.some(pat => {
+      if (pat.endsWith('/') && path.includes(pat)) return true;
+      if (pat.startsWith('*') && path.endsWith(pat.slice(1))) return true;
+      return path.includes(pat);
+    });
   }
 
   function displayPath(p){
@@ -499,28 +569,68 @@
     return p;
   }
 
+  // תצוגת עץ תיקיות (Tree View)
   function renderFileList(){
-    fileListEl.style.display = entries.length ? '' : 'none';
+    fileTreeEl.style.display = entries.length ? '' : 'none';
     $('clearAll').style.display = entries.length ? '' : 'none';
-    fileListEl.innerHTML = '';
-    entries.forEach((e, i) => {
-      const row = document.createElement('div');
-      row.className = 'filerow';
-      row.innerHTML =
-        '<input type="checkbox" data-i="' + i + '"' + (e.checked ? ' checked' : '') + '>' +
-        '<span>' + displayPath(e.path) + '</span>' +
-        '<em>' + Math.max(1, Math.round(e.base64.length * 0.75 / 1024)) + ' KB</em>';
-      fileListEl.appendChild(row);
+    fileTreeEl.innerHTML = '';
+
+    const filtered = entries.filter(e => !isIgnored(displayPath(e.path)));
+
+    if (!filtered.length && entries.length) {
+      fileTreeEl.innerHTML = '<div style="color:var(--muted); padding:5px;">כל הקבצים סוננו לפי התבניות.</div>';
+      return;
+    }
+
+    // ביוני עץ תיקיות היררכי
+    const tree = {};
+    filtered.forEach((e, idx) => {
+      const parts = displayPath(e.path).split('/');
+      let curr = tree;
+      parts.forEach((part, i) => {
+        if (i === parts.length - 1) {
+          curr[part] = { _entry: e, _idx: entries.indexOf(e) };
+        } else {
+          curr[part] = curr[part] || {};
+          curr = curr[part];
+        }
+      });
     });
-    fileHint.textContent = entries.length ? 'סמנו קבצים כדי להוציא אותם מהקומיט. קבצים אחרים בריפו לא נפגעים.' : '';
+
+    function buildTreeHTML(node) {
+      let html = '';
+      for (const key in node) {
+        if (node[key]._entry) {
+          const e = node[key]._entry;
+          const i = node[key]._idx;
+          const kb = Math.max(1, Math.round(e.base64.length * 0.75 / 1024));
+          html += `<div class="tree-file">
+            <input type="checkbox" data-i="${i}" ${e.checked ? 'checked' : ''}>
+            <span>📄 ${key}</span>
+            <em>${kb} KB</em>
+          </div>`;
+        } else {
+          html += `<div class="tree-node">
+            <div class="tree-folder">📁 ${key}/</div>
+            <div>${buildTreeHTML(node[key])}</div>
+          </div>`;
+        }
+      }
+      return html;
+    }
+
+    fileTreeEl.innerHTML = buildTreeHTML(tree);
+    fileHint.textContent = filtered.length ? 'קבצים שסומנו ייכללו בקומיט.' : '';
   }
-  fileListEl.addEventListener('change', e => {
+
+  fileTreeEl.addEventListener('change', e => {
     if (e.target.matches('input[type=checkbox]')){
       entries[parseInt(e.target.dataset.i, 10)].checked = e.target.checked;
     }
   });
   stripRootCk.addEventListener('change', renderFileList);
 
+  // קריאה ל-API של GitHub כולל בדיקת Rate Limit
   async function gh(path, token, opts){
     opts = opts || {};
     const res = await fetch('https://api.github.com' + path, {
@@ -533,6 +643,14 @@
       },
       body: opts.body ? JSON.stringify(opts.body) : undefined
     });
+
+    // עדכון מחוון Rate Limit
+    const remaining = res.headers.get('x-ratelimit-remaining');
+    const limit = res.headers.get('x-ratelimit-limit');
+    if (remaining && limit) {
+      $('rateLimitVal').textContent = `${remaining} / ${limit}`;
+    }
+
     const data = await res.json().catch(() => ({}));
     if (!res.ok){
       const msg = (data && data.message) ? data.message : ('HTTP ' + res.status);
@@ -541,41 +659,92 @@
     return data;
   }
 
-  // אירוע לחיצה על כפתור טעינת פרויקטים
-  fetchReposBtn.addEventListener('click', async () => {
-    const token = $('token').value.trim();
-    if (!token) {
-      alert('נא להזין טוקן אישי תחילה.');
-      return;
-    }
+  async function loadRepos(token, autoSelectRepo) {
+    $('repoSpinner').style.display = 'inline-block';$('fetchBtnText').textContent = 'טוען...';
     fetchReposBtn.disabled = true;
-    fetchReposBtn.textContent = 'טוען...';
-    repoSelect.innerHTML = '<option value="">טוען רשימה...</option>';
-    
+
     try {
-      const repos = await gh('/user/repos?sort=updated&per_page=100', token);
+      reposCache = await gh('/user/repos?sort=updated&per_page=100', token);
       repoSelect.innerHTML = '';
-      if (!repos || repos.length === 0) {
+      if (!reposCache || reposCache.length === 0) {
         repoSelect.innerHTML = '<option value="">לא נמצאו פרויקטים</option>';
       } else {
-        repos.forEach(r => {
+        reposCache.forEach(r => {
           const opt = document.createElement('option');
-          opt.value = r.full_name; // מכיל את המבנה owner/repo
+          opt.value = r.full_name;
           opt.textContent = r.full_name;
           repoSelect.appendChild(opt);
         });
+        if (autoSelectRepo) {
+          repoSelect.value = autoSelectRepo;
+          triggerRepoChange();
+        } else if (reposCache.length > 0) {
+          triggerRepoChange();
+        }
+        showToast('רשימת הפרויקטים נטענה', 'info');
       }
     } catch(err) {
-      alert('שגיאה בטעינת הפרויקטים: ' + err.message);
+      showToast('שגיאה בטעינת הפרויקטים: ' + err.message, 'error');
       repoSelect.innerHTML = '<option value="">שגיאה בטעינה</option>';
     } finally {
+      $('repoSpinner').style.display = 'none';$('fetchBtnText').textContent = 'טען פרויקטים';
       fetchReposBtn.disabled = false;
-      fetchReposBtn.textContent = 'טען פרויקטים';
     }
+  }
+
+  function triggerRepoChange() {
+    const selected = repoSelect.value;
+    if (!selected) return;
+    localStorage.setItem('gh_repo', selected);
+    
+    // זיהוי ברנץ' אוטומטי מתוך הקאש
+    const rData = reposCache.find(r => r.full_name === selected);
+    if (rData && rData.default_branch) {
+      $('base').value = rData.default_branch;
+    }
+  }
+
+  fetchReposBtn.addEventListener('click', () => {
+    const token = $('token').value.trim();
+    if (!token) { showToast('נא להזין טוקן אישי תחילה.', 'error'); return; }
+    loadRepos(token);
   });
 
+  repoSelect.addEventListener('change', triggerRepoChange);
+
   function selectedEntries(){
-    return entries.filter(e => e.checked);
+    return entries.filter(e => e.checked && !isIgnored(displayPath(e.path)));
+  }
+
+  // העלאה מקבילית באצוות (Concurrent Uploading)
+  async function uploadBlobsConcurrently(chosen, fullRepo, token, prefix) {
+    const CONCURRENCY = 5; // עד 5 העלאות במקביל
+    let done = 0;
+    const tree = [];
+    const queue = [...chosen];
+
+    showProgress('מעלה קבצים (במקביל)', 0, chosen.length);
+
+    async function worker() {
+      while (queue.length > 0) {
+        const e = queue.shift();
+        const blob = await gh('/repos/' + fullRepo + '/git/blobs', token, {
+          method: 'POST',
+          body: { content: e.base64, encoding: 'base64' }
+        });
+        let p = displayPath(e.path);
+        if (prefix) p = prefix + '/' + p;
+        tree.push({ path: p, mode: '100644', type: 'blob', sha: blob.sha });
+        
+        done++;
+        showProgress('מעלה קבצים (במקביל)', done, chosen.length);
+        log('קובץ הועלה (' + done + '/' + chosen.length + '): ' + displayPath(e.path), 'info');
+      }
+    }
+
+    const workers = Array(Math.min(CONCURRENCY, chosen.length)).fill(0).map(() => worker());
+    await Promise.all(workers);
+    return tree;
   }
 
   pushBtn.addEventListener('click', async () => {
@@ -591,30 +760,26 @@
     const newBranch = $('newBranch').value.trim();
     const commitMsg = $('msg').value.trim() || 'עדכון מהטלפון';
     const prTitle = $('prTitle').value.trim() || commitMsg;
-    const prefix = $('prefix').value.trim().replace(/^\/+|\/+$/g, '');
+    const prefix = $('prefix').value.trim().replace(/^\/+\vert{}\/+$/g, '');
 
     if (!token || !fullRepo){
-      log('נא למלא טוקן ולבחור ריפו מהרשימה.', 'err');
-      return;
-    }
-    if (mode === 'pr' && !newBranch){
-      log('נא למלא שם לברנץ׳ החדש.', 'err');
+      showToast('נא למלא טוקן ולבחור ריפו מהרשימה.', 'error');
       return;
     }
     const chosen = selectedEntries();
     if (!chosen.length){
-      log('לא נבחרו קבצים.', 'err');
+      showToast('לא נבחרו קבצים (או שכולם סוננו).', 'error');
       return;
     }
 
     pushBtn.disabled = true;
+    $('pushSpinner').style.display = 'inline-block';$('pushBtnText').textContent = 'מעבד דחיפה...';
     const targetBranch = mode === 'pr' ? newBranch : base;
 
     try{
       log('שולף את ' + base + ' ...', 'info');
       const baseRef = await gh('/repos/' + fullRepo + '/git/ref/heads/' + base, token);
       const baseCommitSha = baseRef.object.sha;
-      log('בסיס: ' + baseCommitSha.slice(0,7), 'ok');
 
       if (mode === 'pr'){
         log('יוצר ברנץ׳ ' + newBranch + ' ...', 'info');
@@ -623,11 +788,8 @@
             method: 'POST',
             body: { ref: 'refs/heads/' + newBranch, sha: baseCommitSha }
           });
-          log('ברנץ׳ נוצר.', 'ok');
         }catch(e){
-          if (e.message.includes('Reference already exists')){
-            log('הברנץ׳ כבר קיים — משתמש בו.', 'info');
-          } else throw e;
+          if (!e.message.includes('Reference already exists')) throw e;
         }
       }
 
@@ -637,25 +799,9 @@
       const parentCommit = await gh('/repos/' + fullRepo + '/git/commits/' + parentCommitSha, token);
       const baseTreeSha = parentCommit.tree.sha;
 
-      log('מעלה ' + chosen.length + ' קבצים (blobs) ...', 'info');
-      showProgress('מעלה קבצים', 0, chosen.length);
-      const tree = [];
-      let done = 0;
-      for (const e of chosen){
-        const blob = await gh('/repos/' + fullRepo + '/git/blobs', token, {
-          method: 'POST',
-          body: { content: e.base64, encoding: 'base64' }
-        });
-        let p = displayPath(e.path);
-        if (prefix) p = prefix + '/' + p;
-        tree.push({ path: p, mode: '100644', type: 'blob', sha: blob.sha });
-        done++;
-        showProgress('מעלה קבצים', done, chosen.length);
-        
-        // השורה החדשה שמדפיסה את התקדמות הקבצים ללוג:
-        log('קובץ הועלה (' + done + '/' + chosen.length + '): ' + displayPath(e.path), 'info');
-      }
-      log('כל ה-blobs הועלו.', 'ok');
+      log('מעלה ' + chosen.length + ' קבצים במקביל ...', 'info');
+      const tree = await uploadBlobsConcurrently(chosen, fullRepo, token, prefix);
+      log('כל הקבצים הועלו בהצלחה.', 'ok');
       hideProgress();
 
       log('בונה עץ קבצים חדש ...', 'info');
@@ -669,14 +815,12 @@
         method: 'POST',
         body: { message: commitMsg, tree: newTree.sha, parents: [parentCommitSha] }
       });
-      log('קומיט נוצר: ' + newCommit.sha.slice(0,7), 'ok');
 
       log('מעדכן את ' + targetBranch + ' ...', 'info');
       await gh('/repos/' + fullRepo + '/git/refs/heads/' + targetBranch, token, {
         method: 'PATCH',
         body: { sha: newCommit.sha, force: false }
       });
-      log('הברנץ׳ עודכן.', 'ok');
 
       let resultHtml = 'הקומיט נדחף בהצלחה: ' +
         '<a href="https://github.com/' + fullRepo + '/commit/' + newCommit.sha + '" target="_blank">' +
@@ -688,17 +832,19 @@
           method: 'POST',
           body: { title: prTitle, head: newBranch, base: base, body: '' }
         });
-        log('PR נפתח: #' + pr.number, 'ok');
         resultHtml += '<br>Pull Request: <a href="' + pr.html_url + '" target="_blank">#' + pr.number + '</a>';
       }
 
       resultEl.innerHTML = resultHtml;
       resultEl.style.display = '';
+      showToast('התהליך הושלם בהצלחה!', 'success');
     }catch(err){
       log('שגיאה: ' + err.message, 'err');
+      showToast('שגיאה: ' + err.message, 'error');
       hideProgress();
     }finally{
       pushBtn.disabled = false;
+      $('pushSpinner').style.display = 'none';$('pushBtnText').textContent = 'דחיפה ל-GitHub';
     }
   });
 })();
