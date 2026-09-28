@@ -674,6 +674,12 @@
     });
   }
 
+  function escapeHtml(s){
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
   function displayPath(p){
     if (stripRootCk.checked && commonRoot && p.startsWith(commonRoot)){
       return p.slice(commonRoot.length);
@@ -716,12 +722,12 @@
           const kb = Math.max(1, Math.round(e.base64.length * 0.75 / 1024));
           html += `<div class="tree-file">
             <input type="checkbox" data-i="${i}" ${e.checked ? 'checked' : ''}>
-            <span>📄 ${key}</span>
+            <span>📄 ${escapeHtml(key)}</span>
             <em>${kb} KB</em>
           </div>`;
         } else {
           html += `<div class="tree-node">
-            <div class="tree-folder">📁 ${key}/</div>
+            <div class="tree-folder">📁 ${escapeHtml(key)}/</div>
             <div>${buildTreeHTML(node[key])}</div>
           </div>`;
         }
@@ -965,10 +971,14 @@
     const newBranch = $('newBranch').value.trim();
     const commitMsg = $('msg').value.trim() || 'עדכון דרך GitVault Pro';
     const prTitle = $('prTitle').value.trim() || commitMsg;
-    const prefix = $('prefix').value.trim().replace(/^\/+\vert{}\/+$/g, '');
+    const prefix = $('prefix').value.trim().replace(/^\/+|\/+$/g, '');
 
     if (!token || !fullRepo){
       showToast('נא למלא טוקן ולבחור ריפו מהרשימה.', 'error');
+      return;
+    }
+    if (mode === 'pr' && !newBranch){
+      showToast('נא למלא שם לברנץ׳ החדש.', 'error');
       return;
     }
     const chosen = selectedEntries();
