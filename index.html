@@ -6,16 +6,16 @@
 <title>GitVault Pro — ניהול ודחיפת ZIP ל-GitHub</title>
 <style>
   :root{
-    --bg: #050a06;
-    --glass-bg: rgba(20, 35, 25, 0.45);
-    --glass-border: rgba(46, 160, 67, 0.25);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    --bg: #020805;
+    --glass-bg: rgba(10, 46, 22, 0.55);
+    --glass-border: rgba(57, 214, 89, 0.4);
+    --glass-shadow: 0 8px 36px 0 rgba(0, 0, 0, 0.55);
     
     --text: #e6edf3;
     --muted: #a3b3c4;
-    --green: #2ea043;
-    --green-hover: #3fb950;
-    --green-glow: 0 0 15px rgba(63, 185, 80, 0.4);
+    --green: #14602b;
+    --green-hover: #22a83f;
+    --green-glow: 0 0 20px rgba(34, 200, 70, 0.55);
     --blue: #58a6ff;
     --red: #f85149;
     
@@ -39,7 +39,7 @@
     position: fixed;
     top: -15%; right: -10%;
     width: 50vw; height: 50vw;
-    background: radial-gradient(circle, rgba(46, 160, 67, 0.15) 0%, transparent 60%);
+    background: radial-gradient(circle, rgba(34, 200, 70, 0.15) 0%, transparent 60%);
     filter: blur(80px);
     z-index: -1;
   }
@@ -96,7 +96,7 @@
   }
   section:hover {
     box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
-    border-color: rgba(46, 160, 67, 0.4);
+    border-color: rgba(34, 200, 70, 0.4);
   }
 
   section h2{
@@ -171,14 +171,14 @@
   .mode input{margin:0; accent-color: var(--green);}
   .mode label.active{
     border-color: var(--green); 
-    background: rgba(46, 160, 67, 0.15);
+    background: rgba(34, 200, 70, 0.15);
     color: var(--text);
-    box-shadow: inset 0 0 10px rgba(46, 160, 67, 0.1);
+    box-shadow: inset 0 0 10px rgba(34, 200, 70, 0.1);
   }
 
   .drop{
-    border: 2px dashed rgba(46, 160, 67, 0.4); 
-    background: rgba(46, 160, 67, 0.03);
+    border: 2px dashed rgba(34, 200, 70, 0.4); 
+    background: rgba(34, 200, 70, 0.03);
     border-radius: 12px; padding: 26px 14px;
     text-align:center; color:var(--muted); font-size:14px; cursor:pointer;
     transition: all 0.3s ease;
@@ -186,8 +186,8 @@
   .drop:hover{
     border-color: var(--green-hover); 
     color:var(--text);
-    background: rgba(46, 160, 67, 0.08);
-    box-shadow: inset 0 0 20px rgba(46, 160, 67, 0.1);
+    background: rgba(34, 200, 70, 0.08);
+    box-shadow: inset 0 0 20px rgba(34, 200, 70, 0.1);
   }
   .drop input{display:none;}
 
@@ -216,12 +216,12 @@
     font-size:16px; font-weight:600; cursor:pointer; font-family:var(--sans);
     transition: all 0.3s ease;
     text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    box-shadow: 0 4px 15px rgba(46, 160, 67, 0.2);
+    box-shadow: 0 4px 15px rgba(34, 200, 70, 0.2);
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   }
   button.primary:hover:not(:disabled){
     background: linear-gradient(135deg, var(--green-hover) 0%, var(--green) 100%);
-    box-shadow: var(--green-glow), 0 6px 20px rgba(46, 160, 67, 0.4);
+    box-shadow: var(--green-glow), 0 6px 20px rgba(34, 200, 70, 0.4);
     transform: translateY(-1px);
   }
   button.primary:disabled{
@@ -273,8 +273,8 @@
 
   .result{
     margin-top:20px; padding:16px; border-radius:12px; font-size:14.5px;
-    background: rgba(46, 160, 67, 0.15); 
-    border: 1px solid rgba(46, 160, 67, 0.5); 
+    background: rgba(34, 200, 70, 0.15); 
+    border: 1px solid rgba(34, 200, 70, 0.5); 
     color:var(--text);
     backdrop-filter: blur(10px);
     box-shadow: var(--green-glow);
@@ -323,6 +323,16 @@
   }
   .modal-overlay.active .modal-card { transform: translateY(0); }
   .modal-card h3 { margin: 0 0 16px; font-size: 18px; color: var(--text); }
+
+  .credit{
+    text-align:center; margin-top:10px; padding-top:4px;
+    font-size:12.5px; color: rgba(163,179,196,0.6);
+  }
+  .credit a{
+    color: var(--green-hover); text-decoration:none; font-weight:600;
+    text-shadow: 0 0 8px rgba(63,185,80,0.35);
+  }
+  .credit a:hover{ text-decoration:underline; color:#6ee383; }
 </style>
 </head>
 <body>
@@ -456,6 +466,10 @@
       </div>
     </div>
   </div>
+
+  <footer class="credit">
+    פותח באהבה ע״י — <a href="https://github.com/YSmauas/GitHub-ripo-android" target="_blank" rel="noopener">י.מ. מאואס</a>
+  </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
