@@ -333,6 +333,14 @@
     text-shadow: 0 0 8px rgba(63,185,80,0.35);
   }
   .credit a:hover{ text-decoration:underline; color:#6ee383; }
+
+  .field-error{
+    color: var(--red); font-size:12px; margin-top:5px; line-height:1.5;
+  }
+  input.invalid{
+    border-color: var(--red) !important;
+    box-shadow: 0 0 0 1px rgba(248,81,73,0.4);
+  }
 </style>
 </head>
 <body>
@@ -401,6 +409,7 @@
     <div class="field" id="newBranchField" style="display:none;">
       <label for="newBranch">שם הברנץ' החדש</label>
       <input type="text" id="newBranch" placeholder="update-from-web">
+      <div class="field-error" id="newBranchError" style="display:none;"></div>
     </div>
     <div class="field">
       <label for="msg">הודעת קומיט</label>
@@ -477,6 +486,50 @@
   const $ = id => document.getElementById(id);
   const modeRadios = document.querySelectorAll('input[name=mode]');
   const newBranchField = $('newBranchField');
+  const newBranchInput = $('newBranch');
+  const newBranchError = $('newBranchError');
+
+  function isValidRefName(name){
+    if (!name) return false;
+    if (name.includes('..')) return false;
+    if (/[\s~^:?*\[\\\x00-\x1f\x7f]/.test(name)) return false;
+    if (name.startsWith('/') || name.endsWith('/')) return false;
+    if (name === '@') return false;
+    if (name.includes('@{')) return false;
+    const parts = name.split('/');
+    for (const part of parts){
+      if (!part) return false;
+      if (part.startsWith('.')) return false;
+      if (part.endsWith('.lock')) return false;
+      if (part.endsWith('.')) return false;
+    }
+    return true;
+  }
+
+  function validateNewBranch(){
+    const mode = document.querySelector('input[name=mode]:checked').value;
+    if (mode !== 'pr'){
+      newBranchInput.classList.remove('invalid');
+      newBranchError.style.display = 'none';
+      return true;
+    }
+    const val = newBranchInput.value.trim();
+    if (!val){
+      newBranchInput.classList.remove('invalid');
+      newBranchError.style.display = 'none';
+      return false; // empty is caught separately with its own message at push time
+    }
+    if (!isValidRefName(val)){
+      newBranchInput.classList.add('invalid');
+      newBranchError.textContent = 'שם לא תקין: אסורים רווחים, "..", ":" "?" "*" "[" "\\" "~" "^", ואסור להתחיל/להסתיים ב-"/" או ב-".".';
+      newBranchError.style.display = '';
+      return false;
+    }
+    newBranchInput.classList.remove('invalid');
+    newBranchError.style.display = 'none';
+    return true;
+  }
+  newBranchInput.addEventListener('input', validateNewBranch);
   const prTitleField = $('prTitleField');
   const modeCommitLbl = $('modeCommitLbl');
   const modePrLbl = $('modePrLbl');
@@ -570,6 +623,7 @@
     prTitleField.style.display = mode === 'pr' ? '' : 'none';
     modeCommitLbl.classList.toggle('active', mode === 'commit');
     modePrLbl.classList.toggle('active', mode === 'pr');
+    validateNewBranch();
   }
   modeRadios.forEach(r => r.addEventListener('change', updateModeUI));
   updateModeUI();
@@ -612,13 +666,26 @@
     return btoa(binary);
   }
 
-  function addOrReplaceEntry(path, base64){
+  async function gitBlobSha1(buf){
+    const bytes = new Uint8Array(buf);
+    const header = new TextEncoder().encode('blob ' + bytes.length + '\0');
+    const full = new Uint8Array(header.length + bytes.length);
+    full.set(header, 0);
+    full.set(bytes, header.length);
+    const hashBuffer = await crypto.subtle.digest('SHA-1', full);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function addOrReplaceEntry(path, buf){
+    const base64 = arrayBufferToBase64(buf);
+    const gitSha = await gitBlobSha1(buf);
     const existing = entries.find(e => e.path === path);
     if (existing){
       existing.base64 = base64;
+      existing.gitSha = gitSha;
       existing.checked = true;
     } else {
-      entries.push({ path, base64, checked: true });
+      entries.push({ path, base64, gitSha, checked: true });
     }
   }
 
@@ -644,7 +711,7 @@
             if (zEntry.dir) return;
             if (relPath.startsWith('__MACOSX/') || relPath.endsWith('.DS_Store')) return;
             paths.push(relPath);
-            tasks.push(zEntry.async('arraybuffer').then(buf => addOrReplaceEntry(relPath, arrayBufferToBase64(buf))));
+            tasks.push(zEntry.async('arraybuffer').then(buf => addOrReplaceEntry(relPath, buf)));
           });
           await Promise.all(tasks);
 
@@ -663,7 +730,7 @@
           }
           const relPath = file.webkitRelativePath && file.webkitRelativePath.length ? file.webkitRelativePath : file.name;
           const buf = await file.arrayBuffer();
-          addOrReplaceEntry(relPath, arrayBufferToBase64(buf));
+          await addOrReplaceEntry(relPath, buf);
         }
       }
       stripRootCk.checked = !!commonRoot;
@@ -873,15 +940,51 @@
       return;
     }
 
-    showToast('מכין הורדת ZIP מ-GitHub...', 'info');
+    downloadRepoBtn.disabled = true;
+    logEl.innerHTML = '';
+    logEl.style.display = '';
     try {
-      const res = await fetch(`https://api.github.com/repos/${fullRepo}/zipball/${base}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (!res.ok) throw new Error('שגיאה בהורדת הקובץ מ-GitHub');
-      
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      // Note: GitHub's zipball endpoint (codeload.github.com) doesn't send CORS
+      // headers, so a direct fetch from the browser always fails here. Instead
+      // we rebuild the zip ourselves from the Git Data API, which does support CORS.
+      log('שולף את עץ הקבצים של ' + base + ' ...', 'info');
+      const ref = await gh('/repos/' + fullRepo + '/git/ref/heads/' + base, token);
+      const commit = await gh('/repos/' + fullRepo + '/git/commits/' + ref.object.sha, token);
+      const treeData = await gh('/repos/' + fullRepo + '/git/trees/' + commit.tree.sha + '?recursive=1', token);
+      const blobsOnly = (treeData.tree || []).filter(i => i.type === 'blob');
+
+      if (!blobsOnly.length){
+        showToast('הריפו ריק — אין מה להוריד.', 'info');
+        return;
+      }
+      if (treeData.truncated){
+        log('שימו לב: עץ הקבצים גדול מדי לשליפה מלאה — ייתכן שחלק מהקבצים לא יכללו ב-ZIP.', 'info');
+      }
+
+      log('מוריד ' + blobsOnly.length + ' קבצים ...', 'info');
+      showProgress('מוריד קבצים', 0, blobsOnly.length);
+
+      const zip = new JSZip();
+      const CONCURRENCY = 5;
+      const queue = [...blobsOnly];
+      let done = 0;
+
+      async function worker(){
+        while (queue.length > 0){
+          const item = queue.shift();
+          const blobData = await gh('/repos/' + fullRepo + '/git/blobs/' + item.sha, token);
+          const cleanBase64 = (blobData.content || '').replace(/\n/g, '');
+          zip.file(item.path, cleanBase64, { base64: true });
+          done++;
+          showProgress('מוריד קבצים', done, blobsOnly.length);
+        }
+      }
+      await Promise.all(Array(Math.min(CONCURRENCY, blobsOnly.length)).fill(0).map(() => worker()));
+      log('כל הקבצים נשלפו, בונה ZIP ...', 'ok');
+      hideProgress();
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${fullRepo.replace('/', '-')}-${base}.zip`;
@@ -889,9 +992,13 @@
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      showToast('הורדת הקובץ החלה!', 'success');
+      showToast('ההורדה הושלמה!', 'success');
     } catch (err) {
+      log('שגיאה בהורדת הריפו: ' + err.message, 'err');
       showToast('שגיאה בהורדת הריפו: ' + err.message, 'error');
+      hideProgress();
+    } finally {
+      downloadRepoBtn.disabled = false;
     }
   });
 
@@ -995,6 +1102,11 @@
       showToast('נא למלא שם לברנץ׳ החדש.', 'error');
       return;
     }
+    if (mode === 'pr' && !isValidRefName(newBranch)){
+      validateNewBranch();
+      showToast('שם הברנץ׳ לא תקין — תקנו אותו לפני הדחיפה.', 'error');
+      return;
+    }
     const chosen = selectedEntries();
     if (!chosen.length){
       showToast('לא נבחרו קבצים (או שכולם סוננו).', 'error');
@@ -1028,8 +1140,42 @@
       const parentCommit = await gh('/repos/' + fullRepo + '/git/commits/' + parentCommitSha, token);
       const baseTreeSha = parentCommit.tree.sha;
 
-      log('מעלה ' + chosen.length + ' קבצים במקביל ...', 'info');
-      const tree = await uploadBlobsConcurrently(chosen, fullRepo, token, prefix);
+      log('בודק אילו קבצים השתנו מול הריפו ...', 'info');
+      const treeData = await gh('/repos/' + fullRepo + '/git/trees/' + baseTreeSha + '?recursive=1', token);
+      if (treeData.truncated){
+        log('שימו לב: עץ הקבצים של הריפו גדול מדי לבדיקה מלאה — ייתכן שחלק מהקבצים ייחשבו "השתנו" גם אם לא.', 'info');
+      }
+      const existingShaByPath = new Map();
+      (treeData.tree || []).forEach(item => {
+        if (item.type === 'blob') existingShaByPath.set(item.path, item.sha);
+      });
+
+      function finalPathFor(e){
+        let p = displayPath(e.path);
+        return prefix ? prefix + '/' + p : p;
+      }
+
+      const changed = [];
+      let skippedCount = 0;
+      for (const e of chosen){
+        const existingSha = existingShaByPath.get(finalPathFor(e));
+        if (existingSha && existingSha === e.gitSha){
+          skippedCount++;
+        } else {
+          changed.push(e);
+        }
+      }
+      if (skippedCount > 0){
+        log(skippedCount + ' קבצים זהים לגרסה שבריפו — דילוג עליהם (לא יועלו).', 'ok');
+      }
+      if (changed.length === 0){
+        log('אין שינויים לדחוף — כל הקבצים שנבחרו זהים לריפו.', 'ok');
+        showToast('אין שינויים לדחוף — כל הקבצים זהים לגרסה הקיימת.', 'info');
+        return;
+      }
+
+      log('מעלה ' + changed.length + ' קבצים שהשתנו (מתוך ' + chosen.length + ' שנבחרו) במקביל ...', 'info');
+      const tree = await uploadBlobsConcurrently(changed, fullRepo, token, prefix);
       log('כל הקבצים הועלו בהצלחה.', 'ok');
       hideProgress();
 
@@ -1046,10 +1192,17 @@
       });
 
       log('מעדכן את ' + targetBranch + ' ...', 'info');
-      await gh('/repos/' + fullRepo + '/git/refs/heads/' + targetBranch, token, {
-        method: 'PATCH',
-        body: { sha: newCommit.sha, force: false }
-      });
+      try{
+        await gh('/repos/' + fullRepo + '/git/refs/heads/' + targetBranch, token, {
+          method: 'PATCH',
+          body: { sha: newCommit.sha, force: false }
+        });
+      }catch(refErr){
+        if (/fast forward/i.test(refErr.message)){
+          throw new Error('זוהתה התנגשות: מישהו אחר דחף שינויים ל-' + targetBranch + ' בדיוק באותו הזמן. הקומיט שלכם נוצר בהצלחה (sha: ' + newCommit.sha.slice(0,7) + ') אך עדיין לא שויך לברנץ׳. פשוט נסו לדחוף שוב — הריצה הבאה תתבסס אוטומטית על הגרסה העדכנית ביותר.');
+        }
+        throw refErr;
+      }
 
       let resultHtml = 'הקומיט נדחף בהצלחה: ' +
         '<a href="https://github.com/' + fullRepo + '/commit/' + newCommit.sha + '" target="_blank">' +
