@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/GitHub%20API-v3-2ea043?style=for-the-badge&logo=github" alt="GitHub API">
   <img src="https://img.shields.io/badge/JavaScript-Vanilla%20ES6+-yellow?style=for-the-badge&logo=javascript" alt="JavaScript">
-  <img src="https://img.shields.io/badge/UI-Glassmorphism-green?style=for-the-badge" alt="Glassmorphism">
+  <img src="https://img.shields.io/badge/UI-GitHub%20Dark-0d1117?style=for-the-badge&logo=github" alt="GitHub Dark">
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
 </p>
 
@@ -25,7 +25,7 @@
 - 🔀 **תמיכה ב-Pull Requests:** אפשרות ליצירת קומיט ישיר לברנץ' הבסיס או פתיחת ברנץ' חדש ו-PR אוטומטית.
 - 💾 **שמירה מקומית (LocalStorage):** שמירה בטוחה של הטוקן וההגדרות בדפדפן לעבודה שוטפת ונוחה.
 - 📊 **מחוון API Rate Limit:** מעקב בזמן אמת אחר מגבלת הקריאות הנותרות ב-Personal Access Token שלך.
-- 🎨 **עיצוב Glassmorphism מודרני:** ממשק זכוכית ירוק כהה ועז, רספונסיבי ומותאם באופן מלא למכשירים ניידים.
+- 🎨 **עיצוב בסגנון GitHub Dark:** ממשק בהשראת Primer (קופסאות עם כותרת, כפתורים ירוקים/אפורים, אייקוני SVG), רספונסיבי ומותאם למכשירים ניידים.
 
 ---
 
